@@ -327,6 +327,40 @@
             font-style: italic;
         }
 
+        .ep-delete-btn {
+            background: none;
+            border: none;
+            color: var(--gray-400);
+            font-size: 15px;
+            cursor: pointer;
+            padding: 8px 6px;
+            border-radius: 8px;
+            line-height: 1;
+            flex-shrink: 0;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        .ep-delete-btn:active {
+            color: var(--red);
+            background: var(--red-bg);
+        }
+
+        .clear-all-btn {
+            background: none;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--red);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+
+        .clear-all-btn:active {
+            background: var(--red-bg);
+        }
+
         /* ── Note modal (bottom sheet) ── */
         .modal-overlay {
             position: fixed;
@@ -479,7 +513,10 @@
     <section class="episodes-section">
         <div class="section-row">
             <span class="section-title">Episodes</span>
-            <span class="ep-count" id="epCount"></span>
+            <div style="display:flex;align-items:center;gap:10px">
+                <span class="ep-count" id="epCount"></span>
+                <button class="clear-all-btn" id="clearAllBtn" style="display:none">Clear all</button>
+            </div>
         </div>
         <div class="episodes-list" id="episodesList"></div>
     </section>
@@ -524,9 +561,22 @@
     const noteSaveBtn   = document.getElementById('noteSaveBtn');
     const noteSkipBtn   = document.getElementById('noteSkipBtn');
     const noteCancelBtn = document.getElementById('noteCancelBtn');
+    const clearAllBtn   = document.getElementById('clearAllBtn');
 
     // ── Helpers ────────────────────────────────────────────────────────────
     const pad = n => String(n).padStart(2, '0');
+
+    function localISO(d = new Date()) {
+        const off = -d.getTimezoneOffset();
+        const sign = off >= 0 ? '+' : '-';
+        const abs = Math.abs(off);
+        const oh = String(Math.floor(abs / 60)).padStart(2, '0');
+        const om = String(abs % 60).padStart(2, '0');
+        const ms = String(d.getMilliseconds()).padStart(3, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}` +
+               `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${ms}` +
+               `${sign}${oh}:${om}`;
+    }
 
     function fmtElapsed(ms) {
         const s = Math.floor(ms / 1000);
@@ -568,6 +618,7 @@
         const sorted = [...episodes].sort((a, b) => new Date(b.start) - new Date(a.start));
         const total = episodes.length;
         epCount.textContent = total > 0 ? `${total} total` : '';
+        clearAllBtn.style.display = total > 0 ? '' : 'none';
 
         if (total === 0) {
             episodesList.innerHTML =
@@ -592,6 +643,7 @@
                     ${noteHtml}
                 </div>
                 <div class="ep-duration">${dur}</div>
+                <button class="ep-delete-btn" data-id="${ep.id}" aria-label="Delete episode #${num}">✕</button>
             </div>`;
         }).join('');
     }
@@ -645,6 +697,20 @@
         renderEpisodes();
     }
 
+    function deleteEpisode(id) {
+        if (!confirm('Delete this episode?')) return;
+        episodes = episodes.filter(ep => ep.id !== id);
+        persist();
+        renderEpisodes();
+    }
+
+    function deleteAllEpisodes() {
+        if (!confirm(`Delete all ${episodes.length} episodes? This cannot be undone.`)) return;
+        episodes = [];
+        persist();
+        renderEpisodes();
+    }
+
     function discardEpisode() {
         clearInterval(timerInterval);
         activeStart = null;
@@ -667,7 +733,9 @@
                 ? Math.round((new Date(ep.stop) - new Date(ep.start)) / 1000)
                 : '';
             const note = `"${(ep.note || '').replace(/"/g, '""')}"`;
-            return `${i + 1},${ep.start},${ep.stop || ''},${dur},${note}`;
+            const start = localISO(new Date(ep.start));
+            const stop  = ep.stop ? localISO(new Date(ep.stop)) : '';
+            return `${i + 1},${start},${stop},${dur},${note}`;
         }).join('\n');
 
         const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
@@ -696,6 +764,13 @@
     noteSaveBtn.addEventListener('click', () => saveEpisodeWithNote(noteInput.value));
     noteSkipBtn.addEventListener('click', () => saveEpisodeWithNote(''));
     noteCancelBtn.addEventListener('click', () => noteModal.classList.remove('open'));
+
+    episodesList.addEventListener('click', e => {
+        const btn = e.target.closest('.ep-delete-btn');
+        if (btn) deleteEpisode(Number(btn.dataset.id));
+    });
+
+    clearAllBtn.addEventListener('click', deleteAllEpisodes);
 
     // ── Resume active episode after reload ─────────────────────────────────
     if (activeStart) {
