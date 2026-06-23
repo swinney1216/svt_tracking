@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="SVT Track">
+    <title>SVT Tracker</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --green: #16a34a;
+            --green-bg: rgba(22, 163, 74, 0.12);
+            --red: #dc2626;
+            --red-bg: rgba(220, 38, 38, 0.12);
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-900: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: #fff;
+            color: var(--gray-900);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overscroll-behavior: none;
+        }
+
+        /* ── Header ── */
+        header {
+            padding: env(safe-area-inset-top, 12px) 20px 14px;
+            padding-top: max(env(safe-area-inset-top, 0px), 12px);
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-icon {
+            width: 30px;
+            height: 30px;
+            background: var(--red);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .export-btn {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--gray-100);
+            border: none;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-900);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .export-btn:active {
+            background: var(--gray-200);
+        }
+
+        /* ── Main ── */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 20px 32px;
+            padding-bottom: max(32px, env(safe-area-inset-bottom, 0px));
+            gap: 0;
+        }
+
+        /* ── Episode control card ── */
+        .control-card {
+            width: 100%;
+            max-width: 380px;
+            background: var(--gray-50);
+            border-radius: 20px;
+            padding: 28px 24px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            border: 1.5px solid var(--gray-200);
+            transition: border-color 0.3s, background 0.3s;
+        }
+
+        .control-card.active {
+            background: var(--red-bg);
+            border-color: rgba(220, 38, 38, 0.3);
+        }
+
+        .status-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            color: var(--gray-400);
+            transition: color 0.3s;
+        }
+
+        .control-card.active .status-label {
+            color: var(--red);
+        }
+
+        .timer {
+            font-size: 56px;
+            font-weight: 800;
+            letter-spacing: -3px;
+            font-variant-numeric: tabular-nums;
+            color: var(--gray-200);
+            line-height: 1;
+            margin: 12px 0 4px;
+            transition: color 0.3s;
+            min-height: 66px;
+            display: flex;
+            align-items: center;
+        }
+
+        .control-card.active .timer {
+            color: var(--red);
+        }
+
+        .start-time {
+            font-size: 13px;
+            color: var(--gray-400);
+            min-height: 18px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Big action button ── */
+        .action-btn {
+            margin-top: 20px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            background: var(--green);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 6px 24px rgba(22, 163, 74, 0.35);
+            transition: transform 0.12s, box-shadow 0.12s, background 0.3s, box-shadow 0.3s;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .action-btn.active {
+            background: var(--red);
+            box-shadow: 0 6px 24px rgba(220, 38, 38, 0.35);
+        }
+
+        .action-btn:active {
+            transform: scale(0.94);
+            box-shadow: 0 3px 12px rgba(22, 163, 74, 0.25);
+        }
+
+        .action-btn.active:active {
+            box-shadow: 0 3px 12px rgba(220, 38, 38, 0.25);
+        }
+
+        .action-btn svg {
+            width: 44px;
+            height: 44px;
+        }
+
+        .action-btn-label {
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .discard-link {
+            margin-top: 14px;
+            background: none;
+            border: none;
+            font-size: 13px;
+            color: var(--gray-400);
+            cursor: pointer;
+            padding: 6px 12px;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+            display: none;
+        }
+
+        .discard-link.visible {
+            display: block;
+        }
+
+        /* ── Episodes list ── */
+        .episodes-section {
+            width: 100%;
+            max-width: 480px;
+            margin-top: 28px;
+        }
+
+        .section-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--gray-400);
+        }
+
+        .ep-count {
+            font-size: 12px;
+            color: var(--gray-400);
+        }
+
+        .episodes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ep-card {
+            display: flex;
+            align-items: center;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 12px 14px;
+            gap: 12px;
+        }
+
+        .ep-num {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--gray-400);
+            min-width: 22px;
+            text-align: right;
+        }
+
+        .ep-info {
+            flex: 1;
+        }
+
+        .ep-date {
+            font-size: 11px;
+            color: var(--gray-400);
+            margin-bottom: 3px;
+        }
+
+        .ep-times {
+            font-size: 14px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: var(--gray-900);
+            letter-spacing: -0.2px;
+        }
+
+        .ep-duration {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-500);
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            min-width: 50px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 36px 0 24px;
+            font-size: 14px;
+            color: var(--gray-400);
+        }
+
+        .empty-icon {
+            font-size: 36px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .ep-note {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        /* ── Note modal (bottom sheet) ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 100;
+            display: flex;
+            align-items: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-sheet {
+            width: 100%;
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            padding: 12px 24px 32px;
+            padding-bottom: max(32px, env(safe-area-inset-bottom, 0px));
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        .modal-overlay.open .modal-sheet {
+            transform: translateY(0);
+        }
+
+        .modal-handle {
+            width: 36px;
+            height: 4px;
+            background: var(--gray-200);
+            border-radius: 2px;
+            align-self: center;
+            margin-bottom: 4px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .modal-optional {
+            font-weight: 400;
+            color: var(--gray-400);
+        }
+
+        .note-input {
+            width: 100%;
+            border: 1.5px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 15px;
+            font-family: inherit;
+            color: var(--gray-900);
+            resize: none;
+            outline: none;
+            line-height: 1.5;
+            background: var(--gray-50);
+            transition: border-color 0.15s;
+        }
+
+        .note-input:focus {
+            border-color: var(--gray-400);
+            background: #fff;
+        }
+
+        .modal-save-btn {
+            background: var(--green);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .modal-save-btn:active {
+            opacity: 0.85;
+        }
+
+        .modal-secondary-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .modal-text-btn {
+            background: none;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 4px 0;
+            color: var(--gray-500);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .modal-text-btn.cancel {
+            color: var(--gray-400);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <div class="brand-icon">♥</div>
+        <h1>SVT Tracker</h1>
+    </div>
+    <button class="export-btn" id="exportBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export CSV
+    </button>
+</header>
+
+<main>
+    <div class="control-card" id="controlCard">
+        <div class="status-label" id="statusLabel">Ready to track</div>
+        <div class="timer" id="timer">—</div>
+        <div class="start-time" id="startTimeLabel"></div>
+
+        <button class="action-btn" id="actionBtn" aria-label="Start episode">
+            <!-- Play icon (start state) -->
+            <svg id="iconPlay" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5,3 19,12 5,21"/>
+            </svg>
+            <!-- Stop icon (active state) -->
+            <svg id="iconStop" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+            </svg>
+            <span class="action-btn-label" id="btnLabel">Start</span>
+        </button>
+
+        <button class="discard-link" id="discardBtn">Discard episode</button>
+    </div>
+
+    <section class="episodes-section">
+        <div class="section-row">
+            <span class="section-title">Episodes</span>
+            <span class="ep-count" id="epCount"></span>
+        </div>
+        <div class="episodes-list" id="episodesList"></div>
+    </section>
+</main>
+
+<!-- Note modal -->
+<div class="modal-overlay" id="noteModal" role="dialog" aria-modal="true" aria-label="Add episode note">
+    <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-title">Add a note <span class="modal-optional">(optional)</span></div>
+        <textarea class="note-input" id="noteInput" placeholder="e.g. triggered by exercise, resolved on its own…" rows="3"></textarea>
+        <button class="modal-save-btn" id="noteSaveBtn">Save Episode</button>
+        <div class="modal-secondary-row">
+            <button class="modal-text-btn" id="noteSkipBtn">Save without note</button>
+            <button class="modal-text-btn cancel" id="noteCancelBtn">Cancel (resume)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    // ── State ──────────────────────────────────────────────────────────────
+    let episodes = JSON.parse(localStorage.getItem('svt_episodes') || '[]');
+    let activeStart = localStorage.getItem('svt_active_start') || null;
+    let timerInterval = null;
+
+    // ── Elements ───────────────────────────────────────────────────────────
+    const controlCard   = document.getElementById('controlCard');
+    const statusLabel   = document.getElementById('statusLabel');
+    const timerEl       = document.getElementById('timer');
+    const startTimeLbl  = document.getElementById('startTimeLabel');
+    const actionBtn     = document.getElementById('actionBtn');
+    const iconPlay      = document.getElementById('iconPlay');
+    const iconStop      = document.getElementById('iconStop');
+    const btnLabel      = document.getElementById('btnLabel');
+    const discardBtn    = document.getElementById('discardBtn');
+    const exportBtn     = document.getElementById('exportBtn');
+    const episodesList  = document.getElementById('episodesList');
+    const epCount       = document.getElementById('epCount');
+    const noteModal     = document.getElementById('noteModal');
+    const noteInput     = document.getElementById('noteInput');
+    const noteSaveBtn   = document.getElementById('noteSaveBtn');
+    const noteSkipBtn   = document.getElementById('noteSkipBtn');
+    const noteCancelBtn = document.getElementById('noteCancelBtn');
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    const pad = n => String(n).padStart(2, '0');
+
+    function fmtElapsed(ms) {
+        const s = Math.floor(ms / 1000);
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        return h > 0 ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+    }
+
+    function fmtTime(iso) {
+        return new Date(iso).toLocaleTimeString([], {
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+    }
+
+    function fmtDate(iso) {
+        return new Date(iso).toLocaleDateString([], {
+            weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+        });
+    }
+
+    function fmtDuration(ms) {
+        const s = Math.floor(ms / 1000);
+        if (s < 60) return `${s}s`;
+        const m = Math.floor(s / 60);
+        const rem = s % 60;
+        if (m < 60) return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+        const h = Math.floor(m / 60);
+        const rmin = m % 60;
+        return `${h}h ${rmin}m`;
+    }
+
+    function persist() {
+        localStorage.setItem('svt_episodes', JSON.stringify(episodes));
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────
+    function renderEpisodes() {
+        const sorted = [...episodes].sort((a, b) => new Date(b.start) - new Date(a.start));
+        const total = episodes.length;
+        epCount.textContent = total > 0 ? `${total} total` : '';
+
+        if (total === 0) {
+            episodesList.innerHTML =
+                '<div class="empty-state"><span class="empty-icon">📋</span>No episodes recorded yet</div>';
+            return;
+        }
+
+        episodesList.innerHTML = sorted.map((ep, idx) => {
+            const num = total - idx;
+            const dur = ep.stop
+                ? fmtDuration(new Date(ep.stop) - new Date(ep.start))
+                : '—';
+            const noteHtml = ep.note
+                ? `<div class="ep-note">${ep.note.replace(/</g, '&lt;')}</div>`
+                : '';
+            return `
+            <div class="ep-card">
+                <div class="ep-num">#${num}</div>
+                <div class="ep-info">
+                    <div class="ep-date">${fmtDate(ep.start)}</div>
+                    <div class="ep-times">${fmtTime(ep.start)} → ${ep.stop ? fmtTime(ep.stop) : '…'}</div>
+                    ${noteHtml}
+                </div>
+                <div class="ep-duration">${dur}</div>
+            </div>`;
+        }).join('');
+    }
+
+    // ── Active-state UI ────────────────────────────────────────────────────
+    function setActiveUI(active) {
+        controlCard.classList.toggle('active', active);
+        actionBtn.classList.toggle('active', active);
+        actionBtn.setAttribute('aria-label', active ? 'Stop episode' : 'Start episode');
+        iconPlay.style.display = active ? 'none' : '';
+        iconStop.style.display = active ? '' : 'none';
+        btnLabel.textContent = active ? 'Stop' : 'Start';
+        discardBtn.classList.toggle('visible', active);
+        statusLabel.textContent = active ? 'Episode in progress' : 'Ready to track';
+    }
+
+    function updateTimer() {
+        if (!activeStart) return;
+        timerEl.textContent = fmtElapsed(Date.now() - new Date(activeStart).getTime());
+    }
+
+    // ── Actions ────────────────────────────────────────────────────────────
+    function startEpisode() {
+        activeStart = new Date().toISOString();
+        localStorage.setItem('svt_active_start', activeStart);
+        startTimeLbl.textContent = `Started ${fmtTime(activeStart)}`;
+        timerEl.textContent = '00:00';
+        setActiveUI(true);
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function stopEpisode() {
+        // Show the note modal; timer keeps running until user confirms
+        noteInput.value = '';
+        noteModal.classList.add('open');
+        // Delay focus so the sheet animation doesn't jank on iOS
+        setTimeout(() => noteInput.focus(), 320);
+    }
+
+    function saveEpisodeWithNote(note) {
+        clearInterval(timerInterval);
+        const stop = new Date().toISOString();
+        episodes.push({ id: Date.now(), start: activeStart, stop, note: note.trim() });
+        persist();
+        activeStart = null;
+        localStorage.removeItem('svt_active_start');
+        noteModal.classList.remove('open');
+        timerEl.textContent = '—';
+        startTimeLbl.textContent = '';
+        setActiveUI(false);
+        renderEpisodes();
+    }
+
+    function discardEpisode() {
+        clearInterval(timerInterval);
+        activeStart = null;
+        localStorage.removeItem('svt_active_start');
+        timerEl.textContent = '—';
+        startTimeLbl.textContent = '';
+        setActiveUI(false);
+    }
+
+    // ── Export CSV ─────────────────────────────────────────────────────────
+    function exportCSV() {
+        if (episodes.length === 0) {
+            alert('No episodes to export yet.');
+            return;
+        }
+        const header = 'episode,start,stop,duration_seconds,note\n';
+        const sorted = [...episodes].sort((a, b) => new Date(a.start) - new Date(b.start));
+        const rows = sorted.map((ep, i) => {
+            const dur = ep.stop
+                ? Math.round((new Date(ep.stop) - new Date(ep.start)) / 1000)
+                : '';
+            const note = `"${(ep.note || '').replace(/"/g, '""')}"`;
+            return `${i + 1},${ep.start},${ep.stop || ''},${dur},${note}`;
+        }).join('\n');
+
+        const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `svt_episodes_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // ── Event listeners ────────────────────────────────────────────────────
+    actionBtn.addEventListener('click', () => {
+        if (activeStart) stopEpisode();
+        else startEpisode();
+    });
+
+    discardBtn.addEventListener('click', () => {
+        if (confirm('Discard this episode without saving?')) discardEpisode();
+    });
+
+    exportBtn.addEventListener('click', exportCSV);
+
+    noteSaveBtn.addEventListener('click', () => saveEpisodeWithNote(noteInput.value));
+    noteSkipBtn.addEventListener('click', () => saveEpisodeWithNote(''));
+    noteCancelBtn.addEventListener('click', () => noteModal.classList.remove('open'));
+
+    // ── Resume active episode after reload ─────────────────────────────────
+    if (activeStart) {
+        startTimeLbl.textContent = `Started ${fmtTime(activeStart)}`;
+        setActiveUI(true);
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    // ── Init ───────────────────────────────────────────────────────────────
+    renderEpisodes();
+})();
+</script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        });
+    }
+</script>
+
+</body>
+</html>
